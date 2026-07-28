@@ -2768,3 +2768,17 @@ input, select, textarea { font-family: inherit; }
   width: 20px;
   height: 20px;
 }
+
+/* ══════════════════ CLEAR CART BUTTON HOLD ══════════════════ */
+#clearCartBtn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+#clearCartBtn:active {
+  transform: scale(0.98);
+}

@@ -1060,13 +1060,96 @@ function renderCartModal() {
   });
 }
 
-document.getElementById('clearCartBtn').addEventListener('click', () => {
-  if (!confirm('Clear all items from cart?')) return;
-  cart = [];
-  clearCartMember();
-  document.getElementById('cartMemberSearch').value = '';
-  updateCartBar(); renderCartModal(); renderSellGrid();
-  closeCartModal();
+let clearCartHoldTimer = null;
+let clearCartHoldProgress = 0;
+
+document.getElementById('clearCartBtn').addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  clearCartHoldProgress = 0;
+  
+  btn.style.background = 'linear-gradient(to right, #dc3545 0%, #dc3545 0%, var(--bg-input) 0%)';
+  btn.textContent = 'Hold to Clear...';
+  
+  clearCartHoldTimer = setInterval(() => {
+    clearCartHoldProgress += 2;
+    btn.style.background = `linear-gradient(to right, #dc3545 0%, #dc3545 ${clearCartHoldProgress}%, var(--bg-input) ${clearCartHoldProgress}%)`;
+    
+    if (clearCartHoldProgress >= 100) {
+      clearInterval(clearCartHoldTimer);
+      // Clear cart
+      cart = [];
+      clearCartMember();
+      document.getElementById('cartMemberSearch').value = '';
+      updateCartBar(); renderCartModal(); renderSellGrid();
+      closeCartModal();
+      showToast('Cart cleared', 'success');
+      
+      // Reset button
+      btn.style.background = '';
+      btn.textContent = 'Clear Cart';
+    }
+  }, 20);
+});
+
+document.getElementById('clearCartBtn').addEventListener('mouseup', (e) => {
+  if (clearCartHoldTimer) {
+    clearInterval(clearCartHoldTimer);
+    clearCartHoldTimer = null;
+  }
+  const btn = e.currentTarget;
+  btn.style.background = '';
+  btn.textContent = 'Clear Cart';
+});
+
+document.getElementById('clearCartBtn').addEventListener('mouseleave', (e) => {
+  if (clearCartHoldTimer) {
+    clearInterval(clearCartHoldTimer);
+    clearCartHoldTimer = null;
+  }
+  const btn = e.currentTarget;
+  btn.style.background = '';
+  btn.textContent = 'Clear Cart';
+});
+
+// Touch events for mobile
+document.getElementById('clearCartBtn').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const btn = e.currentTarget;
+  clearCartHoldProgress = 0;
+  
+  btn.style.background = 'linear-gradient(to right, #dc3545 0%, #dc3545 0%, var(--bg-input) 0%)';
+  btn.textContent = 'Hold to Clear...';
+  
+  clearCartHoldTimer = setInterval(() => {
+    clearCartHoldProgress += 2;
+    btn.style.background = `linear-gradient(to right, #dc3545 0%, #dc3545 ${clearCartHoldProgress}%, var(--bg-input) ${clearCartHoldProgress}%)`;
+    
+    if (clearCartHoldProgress >= 100) {
+      clearInterval(clearCartHoldTimer);
+      // Clear cart
+      cart = [];
+      clearCartMember();
+      document.getElementById('cartMemberSearch').value = '';
+      updateCartBar(); renderCartModal(); renderSellGrid();
+      closeCartModal();
+      showToast('Cart cleared', 'success');
+      
+      // Reset button
+      btn.style.background = '';
+      btn.textContent = 'Clear Cart';
+    }
+  }, 20);
+});
+
+document.getElementById('clearCartBtn').addEventListener('touchend', (e) => {
+  if (clearCartHoldTimer) {
+    clearInterval(clearCartHoldTimer);
+    clearCartHoldTimer = null;
+  }
+  const btn = e.currentTarget;
+  btn.style.background = '';
+  btn.textContent = 'Clear Cart';
 });
 
 document.getElementById('recordAllSalesBtn').addEventListener('click', async () => {
@@ -1440,8 +1523,8 @@ function showQuantityOverlay(item) {
   const unitEl = document.getElementById('qtyUnit');
 
   itemNameEl.textContent = item.name;
-  displayEl.textContent = item.unit === 'g' ? '0.5' : '1';
-  unitEl.textContent = item.unit || 'unit';
+  displayEl.textContent = '1';
+  unitEl.textContent = ''; // Hide unit display
 
   overlay.hidden = false;
   
