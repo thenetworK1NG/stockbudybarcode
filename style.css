@@ -2638,3 +2638,133 @@ input, select, textarea { font-family: inherit; }
   border-radius: 8px;
   font-family: monospace;
 }
+
+/* ══════════════════ QUANTITY OVERLAY ══════════════════ */
+.quantity-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.quantity-card {
+  background: var(--bg-elevated);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.qty-item-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-1);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.qty-display-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.qty-display {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--bg-input);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 24px;
+  min-width: 140px;
+  text-align: center;
+  font-family: monospace;
+}
+
+.qty-unit {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.numpad-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+}
+
+.numpad-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+.numpad-btn:active {
+  transform: scale(0.95);
+  background: var(--primary);
+  color: white;
+}
+
+.numpad-decimal {
+  font-size: 2rem;
+}
+
+.numpad-back {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.numpad-back:hover {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+.qty-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-qty-next {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-qty-next svg {
+  width: 20px;
+  height: 20px;
+}

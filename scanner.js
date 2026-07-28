@@ -8,6 +8,7 @@ const BarcodeScanner = (() => {
 
   let html5QrCode = null;
   let isScanning = false;
+  let isPaused = false;
   let onSuccessCallback = null;
   let onErrorCallback = null;
 
@@ -78,6 +79,7 @@ const BarcodeScanner = (() => {
       await html5QrCode.stop();
       html5QrCode.clear();
       isScanning = false;
+      isPaused = false;
       html5QrCode = null;
     } catch (error) {
       console.error('Failed to stop scanner:', error);
@@ -85,17 +87,44 @@ const BarcodeScanner = (() => {
   }
 
   /**
+   * Pause scanning (camera stays on but ignores scans)
+   */
+  function pauseScanning() {
+    isPaused = true;
+  }
+
+  /**
+   * Resume scanning
+   */
+  function resumeScanning() {
+    isPaused = false;
+  }
+
+  /**
+   * Check if scanning is paused
+   * @returns {boolean}
+   */
+  function isPausedStatus() {
+    return isPaused;
+  }
+
+  /**
    * Internal success handler
    */
   function onScanSuccess(decodedText, decodedResult) {
+    // Ignore scans while paused
+    if (isPaused) {
+      return;
+    }
+    
     console.log('Barcode scanned:', decodedText, decodedResult);
+    
+    // Pause scanning to show quantity input
+    isPaused = true;
     
     if (onSuccessCallback) {
       onSuccessCallback(decodedText, decodedResult);
     }
-
-    // Auto-stop after successful scan
-    stopScanner();
   }
 
   /**
@@ -148,6 +177,9 @@ const BarcodeScanner = (() => {
   return {
     startScanner,
     stopScanner,
+    pauseScanning,
+    resumeScanning,
+    isPausedStatus,
     isCameraAvailable,
     getCameras,
     isRunning

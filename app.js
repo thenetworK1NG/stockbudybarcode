@@ -1377,6 +1377,11 @@ async function closeScanner() {
 
   await BarcodeScanner.stopScanner();
   
+  // Hide quantity overlay if open
+  hideQuantityOverlay();
+  scannedItemForQty = null;
+  document.getElementById('qtyDisplay').textContent = '1';
+  
   const modal = document.getElementById('scannerModal');
   modal.classList.remove('active');
   setTimeout(() => {
@@ -1387,18 +1392,22 @@ async function closeScanner() {
   isScannerOpen = false;
 }
 
+let scannedItemForQty = null; // Track scanned item for quantity input
+
 async function handleBarcodeScanned(decodedText) {
   console.log('Barcode scanned:', decodedText);
   
   // Check if this looks like a member auth key (5 digits)
   if (/^\d{5}$/.test(decodedText)) {
     showToast('⚠️ This is a member card! Use "Scan Member Card" in the cart instead', 'error');
+    BarcodeScanner.resumeScanning();
     return;
   }
   
   // Check if this looks like a product code (6 digits)
   if (!/^\d{6}$/.test(decodedText)) {
     showToast('❌ Invalid barcode format. Product codes should be 6 digits.', 'error');
+    BarcodeScanner.resumeScanning();
     return;
   }
   
@@ -1409,34 +1418,107 @@ async function handleBarcodeScanned(decodedText) {
     // Check if item is available for sale
     if (item.stockStatus === 'out-of-stock' || item.hiddenFromMenu) {
       showToast(`${item.name} is not available`, 'error');
+      BarcodeScanner.resumeScanning();
       return;
     }
 
-    // Auto-add 1 item to cart without prompting
-    const existing = cart.find(c => c.item.id === item.id);
-    if (existing) {
-      const step = item.unit === 'g' ? 0.5 : 1;
-      existing.qty = +(existing.qty + step).toFixed(2);
-    } else {
-      cart.push({
-        item: { ...item },
-        qty: item.unit === 'g' ? 0.5 : 1,
-        note: ''
-      });
-    }
-
-    updateCartBar();
-    renderSellGrid();
-    
-    // Show success message with pause
-    showToast(`✓ ${item.name} added to cart`, 'success');
-    
-    // Pause briefly then resume scanning
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // Show quantity input overlay
+    scannedItemForQty = item;
+    showQuantityOverlay(item);
   } else {
     showToast('❌ Item not found. Make sure you generated a barcode for this item first.', 'error');
+    BarcodeScanner.resumeScanning();
   }
 }
+
+/* ─── Quantity Overlay (for scanned items) ─────────────────── */
+
+function showQuantityOverlay(item) {
+  const overlay = document.getElementById('quantityOverlay');
+  const itemNameEl = document.getElementById('qtyItemName');
+  const displayEl = document.getElementById('qtyDisplay');
+  const unitEl = document.getElementById('qtyUnit');
+
+  itemNameEl.textContent = item.name;
+  displayEl.textContent = item.unit === 'g' ? '0.5' : '1';
+  unitEl.textContent = item.unit || 'unit';
+
+  overlay.hidden = false;
+  
+  // Dim scanner reader
+  document.getElementById('scannerReader').style.opacity = '0.3';
+  document.getElementById('scannerStatus').style.opacity = '0.3';
+}
+
+function hideQuantityOverlay() {
+  const overlay = document.getElementById('quantityOverlay');
+  overlay.hidden = true;
+  
+  // Restore scanner reader
+  document.getElementById('scannerReader').style.opacity = '1';
+  document.getElementById('scannerStatus').style.opacity = '1';
+}
+
+function addQuantityToCart() {
+  if (!scannedItemForQty) return;
+
+  const displayEl = document.getElementById('qtyDisplay');
+  const qty = parseFloat(displayEl.textContent) || 0;
+
+  if (qty <= 0) {
+    showToast('Enter a valid quantity', 'error');
+    return;
+  }
+
+  const existing = cart.find(c => c.item.id === scannedItemForQty.id);
+  if (existing) {
+    existing.qty = +(existing.qty + qty).toFixed(2);
+  } else {
+    cart.push({
+      item: { ...scannedItemForQty },
+      qty,
+      note: ''
+    });
+  }
+
+  updateCartBar();
+  renderSellGrid();
+  showToast(`✓ ${scannedItemForQty.name} added to cart`, 'success');
+
+  hideQuantityOverlay();
+  scannedItemForQty = null;
+  
+  // Reset display for next scan
+  document.getElementById('qtyDisplay').textContent = '1';
+  
+  // Resume scanning
+  BarcodeScanner.resumeScanning();
+}
+
+// Numpad event listeners
+document.querySelectorAll('.numpad-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const num = btn.dataset.num;
+    const displayEl = document.getElementById('qtyDisplay');
+    let current = displayEl.textContent;
+
+    if (num === 'back') {
+      displayEl.textContent = current.length > 1 ? current.slice(0, -1) : '0';
+    } else if (num === '.') {
+      if (!current.includes('.')) {
+        displayEl.textContent = current + '.';
+      }
+    } else {
+      if (current === '0') {
+        displayEl.textContent = num;
+      } else {
+        displayEl.textContent = current + num;
+      }
+    }
+  });
+});
+
+document.getElementById('qtyNextBtn').addEventListener('click', addQuantityToCart);
 
 // Scanner event listeners
 document.getElementById('openScannerBtn').addEventListener('click', openScanner);

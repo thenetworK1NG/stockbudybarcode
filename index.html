@@ -756,8 +756,46 @@
 
       <div id="scannerReader" class="scanner-reader"></div>
 
+      <!-- Quantity Input Overlay -->
+      <div id="quantityOverlay" class="quantity-overlay" hidden>
+        <div class="quantity-card">
+          <div id="qtyItemName" class="qty-item-name"></div>
+          <div class="qty-display-wrap">
+            <div id="qtyDisplay" class="qty-display">1</div>
+            <div class="qty-unit" id="qtyUnit"></div>
+          </div>
+          <div class="numpad">
+            <button type="button" class="numpad-btn" data-num="1">1</button>
+            <button type="button" class="numpad-btn" data-num="2">2</button>
+            <button type="button" class="numpad-btn" data-num="3">3</button>
+            <button type="button" class="numpad-btn" data-num="4">4</button>
+            <button type="button" class="numpad-btn" data-num="5">5</button>
+            <button type="button" class="numpad-btn" data-num="6">6</button>
+            <button type="button" class="numpad-btn" data-num="7">7</button>
+            <button type="button" class="numpad-btn" data-num="8">8</button>
+            <button type="button" class="numpad-btn" data-num="9">9</button>
+            <button type="button" class="numpad-btn numpad-decimal" data-num=".">.</button>
+            <button type="button" class="numpad-btn" data-num="0">0</button>
+            <button type="button" class="numpad-btn numpad-back" data-num="back">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
+                <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+              </svg>
+            </button>
+          </div>
+          <div class="qty-actions">
+            <button type="button" id="qtyNextBtn" class="btn-primary btn-qty-next">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+              Add & Scan Next
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="form-actions">
-        <button type="button" id="closeScannerBtn" class="btn-secondary">Cancel</button>
+        <button type="button" id="closeScannerBtn" class="btn-secondary">Close Scanner</button>
       </div>
     </div>
   </div>
