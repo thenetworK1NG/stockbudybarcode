@@ -517,7 +517,7 @@
 
       <!-- Member link -->
       <div class="cart-member-wrap">
-        <div id="cartMemberRequiredBanner" class="cart-member-required-banner" hidden>
+        <div id="cartMemberRequiredBanner" class="cart-member-required-banner" hidden style="display: none;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -525,7 +525,7 @@
           </svg>
           Weed is in your cart — you must search for and select a member to continue
         </div>
-        <label class="form-label" for="cartMemberSearch">Link to Member <span class="form-optional">(optional — applies to all items)</span></label>
+        <label class="form-label" for="cartMemberSearch">Link to Member <span class="form-optional">(scan member card)</span></label>
         <button id="scanMemberCardBtn" class="member-scan-btn" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -534,12 +534,12 @@
           </svg>
           Scan Member Card
         </button>
-        <div class="member-search-wrap">
+        <div class="member-search-wrap" style="display: none;">
           <input id="cartMemberSearch" type="search" class="form-input"
                  placeholder="Search by name, member no. or phone…"
                  maxlength="60" autocomplete="off" spellcheck="false">
         </div>
-        <div id="cartMemberResults" class="member-search-results" hidden></div>
+        <div id="cartMemberResults" class="member-search-results" hidden style="display: none;"></div>
         <div id="cartSelectedMemberChip" class="member-chip" hidden>
           <span id="cartSelectedMemberLabel"></span>
           <button type="button" id="cartClearMemberBtn" class="member-chip-clear" aria-label="Remove member">✕</button>

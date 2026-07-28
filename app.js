@@ -1074,11 +1074,7 @@ document.getElementById('recordAllSalesBtn').addEventListener('click', async () 
   /* Weed requires a linked member */
   const hasWeed = cart.some(e => e.item.category === 'weed');
   if (hasWeed && !selectedMember) {
-    showToast('Weed can only be sold to a member — search and select one above', 'error');
-    const ms = document.getElementById('cartMemberSearch');
-    ms.focus();
-    ms.closest('.cart-member-wrap').classList.add('member-required-shake');
-    setTimeout(() => ms.closest('.cart-member-wrap').classList.remove('member-required-shake'), 600);
+    showToast('❌ Weed requires a member card — Scan member card to continue', 'error');
     return;
   }
   /* Animate first so feedback is instant */
@@ -1397,14 +1393,12 @@ async function handleBarcodeScanned(decodedText) {
   // Check if this looks like a member auth key (5 digits)
   if (/^\d{5}$/.test(decodedText)) {
     showToast('⚠️ This is a member card! Use "Scan Member Card" in the cart instead', 'error');
-    await closeScanner();
     return;
   }
   
   // Check if this looks like a product code (6 digits)
   if (!/^\d{6}$/.test(decodedText)) {
     showToast('❌ Invalid barcode format. Product codes should be 6 digits.', 'error');
-    await closeScanner();
     return;
   }
   
@@ -1415,23 +1409,30 @@ async function handleBarcodeScanned(decodedText) {
     // Check if item is available for sale
     if (item.stockStatus === 'out-of-stock' || item.hiddenFromMenu) {
       showToast(`${item.name} is not available`, 'error');
-      await closeScanner();
       return;
     }
 
-    showToast(`Found: ${item.name}`, 'success');
-    await closeScanner();
-    
-    // Switch to sell tab if not already there
-    const sellTab = document.querySelector('[data-tab="sell"]');
-    if (!sellTab.classList.contains('active')) {
-      switchTab('sell');
+    // Auto-add 1 item to cart without prompting
+    const existing = cart.find(c => c.item.id === item.id);
+    if (existing) {
+      const step = item.unit === 'g' ? 0.5 : 1;
+      existing.qty = +(existing.qty + step).toFixed(2);
+    } else {
+      cart.push({
+        item: { ...item },
+        qty: item.unit === 'g' ? 0.5 : 1,
+        note: ''
+      });
     }
 
-    // Open add to cart modal
-    setTimeout(() => {
-      openAddToCartModal(item);
-    }, 300);
+    updateCartBar();
+    renderSellGrid();
+    
+    // Show success message with pause
+    showToast(`✓ ${item.name} added to cart`, 'success');
+    
+    // Pause briefly then resume scanning
+    await new Promise(resolve => setTimeout(resolve, 1200));
   } else {
     showToast('❌ Item not found. Make sure you generated a barcode for this item first.', 'error');
   }
@@ -1484,17 +1485,22 @@ async function openMemberScanner() {
       async (decodedText) => {
         console.log('Member barcode scanned:', decodedText);
         
+        // Show progress indicator
+        statusEl.textContent = '🔍 Looking up member...';
+        showToast('🔍 Looking up member...', 'info');
+        
         // Find member by auth key
         const member = await findMemberByAuthKey(decodedText);
         
         if (member) {
           selectedMember = member;
-          renderSelectedMember();
-          showToast(`Member linked: ${member.memberName}`, 'success');
+          selectCartMember(member);
+          showToast(`✓ Member linked: ${member.memberName}`, 'success');
           await closeScanner();
           titleEl.innerHTML = originalTitle;
         } else {
-          showToast('Member not found', 'error');
+          showToast('❌ Member not found - Try scanning again', 'error');
+          statusEl.textContent = 'Ready to scan member card';
         }
       },
       (error) => {
