@@ -2626,3 +2626,15 @@ input, select, textarea { font-family: inherit; }
     page-break-inside: avoid;
   }
 }
+
+/* Product code badge */
+.product-code-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-family: monospace;
+}

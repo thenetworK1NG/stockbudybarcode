@@ -22,8 +22,47 @@ const db = firebase.database();
    /stock/{itemId}
    ============================================================ */
 
+/**
+ * Generate a unique 6-digit product code
+ * @returns {Promise<string>} 6-digit product code
+ */
+async function generateProductCode() {
+  // Get all existing product codes
+  const snap = await db.ref('stock').once('value');
+  const existingCodes = new Set();
+  
+  snap.forEach(child => {
+    const code = child.val().productCode;
+    if (code) existingCodes.add(code);
+  });
+  
+  // Generate new unique code
+  let newCode;
+  let attempts = 0;
+  do {
+    // Generate 6-digit code (100000-999999)
+    newCode = String(Math.floor(100000 + Math.random() * 900000));
+    attempts++;
+    if (attempts > 50) {
+      // Fallback: find first available code
+      for (let i = 100000; i < 1000000; i++) {
+        if (!existingCodes.has(String(i))) {
+          newCode = String(i);
+          break;
+        }
+      }
+      break;
+    }
+  } while (existingCodes.has(newCode));
+  
+  return newCode;
+}
+
 async function addStockItem(data) {
+  const productCode = await generateProductCode();
+  
   const ref = await db.ref('stock').push({
+    productCode: productCode,
     name:        data.name.trim(),
     category:    data.category,
     stockStatus: data.stockStatus || 'in-stock',
@@ -55,6 +94,7 @@ async function getAllStock() {
     }
     items.push({
       id:             child.key,
+      productCode:    d.productCode   || null,
       name:           d.name          || '',
       category:       d.category      || 'weed',
       stockStatus,
@@ -66,10 +106,52 @@ async function getAllStock() {
       tags:           d.tags          || {},
       hiddenFromMenu: d.hiddenFromMenu || false,
       infoMessage:    d.infoMessage   || null,
+      barcodeGenerated: d.barcodeGenerated || null,
       createdAt:      d.createdAt     || 0
     });
   });
   return items.reverse(); /* newest first */
+}
+
+/**
+ * Find a stock item by its product code
+ * @param {string} productCode - 6-digit product code
+ * @returns {Promise<Object|null>} Item object or null if not found
+ */
+async function findItemByProductCode(productCode) {
+  if (!productCode) return null;
+  
+  const snap = await db.ref('stock')
+    .orderByChild('productCode')
+    .equalTo(productCode.trim())
+    .limitToFirst(1)
+    .once('value');
+  
+  if (!snap.exists()) return null;
+  
+  let item = null;
+  snap.forEach(child => {
+    const d = child.val();
+    let stockStatus = d.stockStatus || 'in-stock';
+    item = {
+      id: child.key,
+      productCode: d.productCode || null,
+      name: d.name || '',
+      category: d.category || 'weed',
+      stockStatus,
+      unit: d.unit || '',
+      gramsInfo: d.gramsInfo || null,
+      price: d.price || 0,
+      icon: d.icon || null,
+      strain: d.strain || null,
+      tags: d.tags || {},
+      hiddenFromMenu: d.hiddenFromMenu || false,
+      infoMessage: d.infoMessage || null,
+      barcodeGenerated: d.barcodeGenerated || null
+    };
+  });
+  
+  return item;
 }
 
 async function updateStockItem(id, data) {
@@ -95,6 +177,17 @@ async function updateStockItem(id, data) {
 async function setStockStatus(id, status) {
   await db.ref('stock').child(id).update({
     stockStatus: status,
+    updatedAt:   firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+/**
+ * Update barcode generated timestamp for an item.
+ * Used when a barcode is downloaded.
+ */
+async function updateBarcodeTimestamp(id) {
+  await db.ref('stock').child(id).update({
+    barcodeGenerated: new Date().toISOString(),
     updatedAt:   firebase.database.ServerValue.TIMESTAMP
   });
 }
@@ -137,6 +230,39 @@ async function searchMembers(query) {
     if (results.length >= 10) return true; /* stop iterating */
   });
   return results;
+}
+
+/**
+ * Find a member by their 5-digit auth key
+ * @param {string} authKey - The 5-digit auth key from barcode
+ * @returns {Object|null} Member object or null if not found
+ */
+async function findMemberByAuthKey(authKey) {
+  if (!authKey) return null;
+  
+  const snap = await db.ref('members')
+    .orderByChild('authKey')
+    .equalTo(authKey.trim())
+    .limitToFirst(1)
+    .once('value');
+  
+  if (!snap.exists()) return null;
+  
+  let member = null;
+  snap.forEach(child => {
+    const d = child.val();
+    member = {
+      id: child.key,
+      memberNumber: d.memberNumber || '',
+      memberName: d.memberName || '',
+      phoneNumber: d.phoneNumber || '',
+      authKey: d.authKey || '',
+      membershipType: d.membershipType || '',
+      expiryDate: d.expiryDate || null
+    };
+  });
+  
+  return member;
 }
 
 /**

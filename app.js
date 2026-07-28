@@ -414,6 +414,7 @@ function renderInventory() {
             <span class="card-name">${esc(item.name)}</span>
             <span class="cat-badge cat-${esc(item.category)}">${esc(catLabel(item.category))}</span>
           </div>
+          ${item.productCode ? `<div class="card-meta"><span class="product-code-badge">Code: ${esc(item.productCode)}</span></div>` : ''}
           ${item.strain ? `<div class="card-meta"><span class="strain-badge strain-${esc(item.strain)}">${esc(strainLabel(item.strain))}</span></div>` : ''}
           ${renderTagBadges(item.tags) ? `<div class="card-tags">${renderTagBadges(item.tags)}</div>` : ''}
           ${item.gramsInfo ? `<div class="card-meta"><span class="grams-label">${esc(item.gramsInfo)}g</span></div>` : ''}
@@ -1263,16 +1264,22 @@ let currentBarcodeItem = null;
 function openBarcodeModal(item) {
   currentBarcodeItem = item;
   
+  // Check if item has a product code
+  if (!item.productCode) {
+    showToast('⚠️ This item doesn\'t have a product code. Please re-add it to generate one.', 'error');
+    return;
+  }
+  
   const modal = document.getElementById('barcodeModal');
   const canvas = document.getElementById('barcodeCanvas');
   const itemNameEl = document.getElementById('barcodeItemName');
   const itemIdEl = document.getElementById('barcodeItemId');
 
   itemNameEl.textContent = item.name;
-  itemIdEl.textContent = `Item ID: ${item.id}`;
+  itemIdEl.textContent = `Product Code: ${item.productCode}`;
 
-  // Generate barcode
-  const success = BarcodeUtils.generateBarcode(item.id, canvas, {
+  // Generate barcode using product code (6 digits)
+  const success = BarcodeUtils.generateBarcode(item.productCode, canvas, {
     height: 80,
     width: 2,
     displayValue: true,
@@ -1300,9 +1307,9 @@ function downloadCurrentBarcode() {
   if (!currentBarcodeItem) return;
 
   const sanitizedName = currentBarcodeItem.name.replace(/[^a-z0-9]/gi, '_');
-  const filename = `barcode_${sanitizedName}_${currentBarcodeItem.id}.png`;
+  const filename = `barcode_${sanitizedName}_${currentBarcodeItem.productCode}.png`;
 
-  BarcodeUtils.downloadBarcode(currentBarcodeItem.id, filename, {
+  BarcodeUtils.downloadBarcode(currentBarcodeItem.productCode, filename, {
     height: 80,
     width: 2,
     displayValue: true,
@@ -1310,8 +1317,8 @@ function downloadCurrentBarcode() {
   });
 
   // Update Firebase to mark barcode as generated
-  updateStockItem(currentBarcodeItem.id, {
-    barcodeGenerated: new Date().toISOString()
+  updateBarcodeTimestamp(currentBarcodeItem.id).catch(err => {
+    console.error('Failed to update barcode timestamp:', err);
   });
 
   showToast('Barcode downloaded successfully', 'success');
@@ -1387,8 +1394,22 @@ async function closeScanner() {
 async function handleBarcodeScanned(decodedText) {
   console.log('Barcode scanned:', decodedText);
   
-  // Find item by ID
-  const item = allStock.find(i => i.id === decodedText);
+  // Check if this looks like a member auth key (5 digits)
+  if (/^\d{5}$/.test(decodedText)) {
+    showToast('⚠️ This is a member card! Use "Scan Member Card" in the cart instead', 'error');
+    await closeScanner();
+    return;
+  }
+  
+  // Check if this looks like a product code (6 digits)
+  if (!/^\d{6}$/.test(decodedText)) {
+    showToast('❌ Invalid barcode format. Product codes should be 6 digits.', 'error');
+    await closeScanner();
+    return;
+  }
+  
+  // Find item by product code
+  const item = await findItemByProductCode(decodedText);
   
   if (item) {
     // Check if item is available for sale
@@ -1412,7 +1433,7 @@ async function handleBarcodeScanned(decodedText) {
       openAddToCartModal(item);
     }, 300);
   } else {
-    showToast('Item not found', 'error');
+    showToast('❌ Item not found. Make sure you generated a barcode for this item first.', 'error');
   }
 }
 
