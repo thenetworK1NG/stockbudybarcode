@@ -60,6 +60,21 @@ function esc(str) {
     .replace(/'/g, '&#039;');
 }
 
+/* ─── Audio ──────────────────────────────────────────────── */
+const sounds = {
+  sale: new Audio('sale.mp3'),
+  scanMember: new Audio('scanmember.mp3'),
+  scanItem: new Audio('scanitem.mp3')
+};
+
+function playSound(soundName) {
+  const sound = sounds[soundName];
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play().catch(err => console.warn('Audio play failed:', err));
+  }
+}
+
 function fmt(num) {
   return 'R\u202f' + Number(num || 0).toLocaleString('en-ZA', {
     minimumFractionDigits: 2,
@@ -596,7 +611,7 @@ async function handleToggleHidden(id) {
     await setHiddenFromMenu(id, newVal);
     item.hiddenFromMenu = newVal;
     renderInventory();
-    showToast(newVal ? 'Hidden from menu & sell' : 'Now visible on menu & sell');
+    showToast(newVal ? '👁️ Hidden from menu (still scannable)' : '✓ Now visible on menu');
   } catch (err) {
     console.error(err);
     showToast('Failed to update visibility', 'error');
@@ -1186,6 +1201,7 @@ document.getElementById('recordAllSalesBtn').addEventListener('click', async () 
       memberName:   selectedMember ? selectedMember.memberName   : null
     };
     await recordPurchase(purchaseData);
+    playSound('sale');
     showToast(`Purchase recorded — ${cart.length} item${cart.length !== 1 ? 's' : ''}!`);
     cart = [];
     clearCartMember();
@@ -1498,13 +1514,16 @@ async function handleBarcodeScanned(decodedText) {
   const item = await findItemByProductCode(decodedText);
   
   if (item) {
-    // Check if item is available for sale
-    if (item.stockStatus === 'out-of-stock' || item.hiddenFromMenu) {
-      showToast(`${item.name} is not available`, 'error');
+    // Check if item is available for sale (only block out-of-stock)
+    if (item.stockStatus === 'out-of-stock') {
+      showToast(`${item.name} is out of stock`, 'error');
       BarcodeScanner.resumeScanning();
       return;
     }
 
+    // Play scan sound
+    playSound('scanItem');
+    
     // Show quantity input overlay
     scannedItemForQty = item;
     showQuantityOverlay(item);
@@ -1522,7 +1541,13 @@ function showQuantityOverlay(item) {
   const displayEl = document.getElementById('qtyDisplay');
   const unitEl = document.getElementById('qtyUnit');
 
-  itemNameEl.textContent = item.name;
+  // Show item name with hidden badge if applicable
+  if (item.hiddenFromMenu) {
+    itemNameEl.innerHTML = `${esc(item.name)} <span class="qty-hidden-badge">👁️ Hidden</span>`;
+  } else {
+    itemNameEl.textContent = item.name;
+  }
+  
   displayEl.textContent = '1';
   unitEl.textContent = ''; // Hide unit display
 
@@ -1660,6 +1685,7 @@ async function openMemberScanner() {
         if (member) {
           selectedMember = member;
           selectCartMember(member);
+          playSound('scanMember');
           showToast(`✓ Member linked: ${member.memberName}`, 'success');
           await closeScanner();
           titleEl.innerHTML = originalTitle;
